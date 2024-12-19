@@ -112,6 +112,11 @@ interface Config {
   apiKey: string;
 
   /**
+   * The base URL
+   */
+  baseUrl: URL;
+
+  /**
    * HTTPS certificate and key.
    */
   https: {
@@ -134,6 +139,7 @@ interface Config {
 
 const config: Config = {
   apiKey: getOption("knockout_api_key", undefined, (value) => value),
+  baseUrl: getOption("base_url", undefined, (value) => new URL(value)),
   https: {
     key: await getOption("https_key_filepath", undefined, readUtf8File),
     cert: await getOption("https_cert_filepath", undefined, readUtf8File),
