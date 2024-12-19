@@ -44,11 +44,15 @@ const getEnvCase = (name: string) => name.toUpperCase();
  * the command line arguments and the environment variables. Command line
  * arguments are take precedent over environment variables.
  * @template T The type of the parsed value.
- * @param {string} name The name of the configuration option. This will be converted to uppercase when checking for the environment variable.
- * @param {ConfigParser<T>} parser A function to parse the raw string into a value of the given template.
- * @param {ConfigValidator<T>[]} validators An array of validator functions to test against the parsed value.
+ * @param {string} name The name of the configuration option. This will be
+ * converted to uppercase when checking for the environment variable.
+ * @param {ConfigParser<T>} parser A function to parse the raw string into a
+ * value of the given template.
+ * @param {ConfigValidator<T>[]} validators An array of validator functions to
+ * test against the parsed value.
  * @param {boolean} [required=true] Whether or not the option is required.
- * @returns {T} The parsed and validated value of the configuration option.
+ * @returns {T | undefined} The parsed and validated value of the configuration
+ * option.
  * @throws {ReferenceError} If the option is required but not provided.
  * @throws {Error} If validation fails when testing the parsed value.
  */
@@ -57,11 +61,15 @@ function getOption<T>(
   parser: (value: string) => T,
   validators?: ConfigValidator<T>[],
   required = true,
-): T {
+): T | undefined {
   const rawValue = args[name] ?? Deno.env.get(getEnvCase(name));
 
-  if (required && rawValue === undefined) {
-    throw new ReferenceError(`Required option ${name} is unset`);
+  if (rawValue === undefined) {
+    if (required) {
+      throw new ReferenceError(`Required option ${name} is unset`);
+    } else {
+      return undefined;
+    }
   }
 
   const parsedValue = parser(rawValue);
