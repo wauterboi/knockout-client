@@ -46,33 +46,32 @@ const getEnvCase = (name: string) => name.toUpperCase();
  * @template T The type of the parsed value.
  * @param {string} name The name of the configuration option. This will be
  * converted to uppercase when checking for the environment variable.
- * @param {ConfigParser<T>} parser A function to parse the raw string into a
+ * @param {T} defaultValue? The value to use if the user does not specify a
+ * value on the command line or with an environment variable
+ * @param {ConfigParser<T>} parser? A function to parse the raw string into a
  * value of the given template.
- * @param {ConfigValidator<T>[]} validators An array of validator functions to
+ * @param {ConfigValidator<T>[]} validators? An array of validator functions to
  * test against the parsed value.
- * @param {boolean} [required=true] Whether or not the option is required.
- * @returns {T | undefined} The parsed and validated value of the configuration
- * option.
  * @throws {ReferenceError} If the option is required but not provided.
  * @throws {Error} If validation fails when testing the parsed value.
  */
 function getOption<T>(
   name: string,
-  parser: (value: string) => T,
+  defaultValue?: T,
+  parser?: (value: string) => T,
   validators?: ConfigValidator<T>[],
-  required = true,
-): T | undefined {
+): T {
   const rawValue = args[name] ?? Deno.env.get(getEnvCase(name));
 
-  if (rawValue === undefined) {
-    if (required) {
+  if (rawValue == undefined) {
+    if (defaultValue == undefined) {
       throw new ReferenceError(`Required option ${name} is unset`);
     } else {
-      return undefined;
+      return defaultValue;
     }
   }
 
-  const parsedValue = parser(rawValue);
+  const parsedValue = (parser == undefined) ? rawValue : parser(rawValue);
 
   if (validators !== undefined) {
     for (const validator of validators) {
@@ -80,7 +79,7 @@ function getOption<T>(
         validator(parsedValue);
       } catch (err) {
         if (err instanceof Error) {
-          err.message = `Option ${name} is invalid: ${err.message}`;
+          err.message = `Option ${name} is invaild: ${err.message}`;
         }
         throw err;
       }
@@ -134,12 +133,12 @@ interface Config {
 }
 
 const config: Config = {
-  apiKey: getOption("knockout_api_key", (value) => value),
+  apiKey: getOption("knockout_api_key", undefined, (value) => value),
   https: {
-    key: await getOption("https_key_filepath", readUtf8File),
-    cert: await getOption("https_cert_filepath", readUtf8File),
+    key: await getOption("https_key_filepath", undefined, readUtf8File),
+    cert: await getOption("https_cert_filepath", undefined, readUtf8File),
   },
-  port: getOption("port", parseInt, [inRange(1, 65535)]),
+  port: getOption("port", 3000, parseInt, [inRange(1, 65535)]),
 };
 
 export { config };
